@@ -1,0 +1,46 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ course.name }}{% endblock %}
+
+{% block body %}
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">{{ course.name }}</h1>
+
+        <table class="table table-striped table-bordered">
+            <tbody>
+            <tr>
+                <th>Описание</th>
+                <td>{{ course.description }}</td>
+            </tr>
+            </tbody>
+        </table>
+
+        <h3>Уроки</h3>
+        <ul class="list-group mb-4" id="lessons-list">
+            {% for lesson in lessons %}
+                <li class="list-group-item" id="lesson-{{ lesson.id }}">
+                    <a href="{{ path('app_lesson_show', {'id': lesson.id}) }}" class="text-decoration-none lesson-item">{{ lesson.nameLesson }}</a>
+                </li>
+            {% else %}
+                <li class="list-group-item">No lessons available</li>
+            {% endfor %}
+        </ul>
+
+        <div class="d-flex justify-content-center gap-3">
+            <a href="{{ path('app_course_index') }}" class="btn btn-secondary">Вернуться к курсам</a>
+            <a href="{{ path('app_course_edit', {'id': course.id}) }}" class="btn btn-warning">Редактировать курс</a>
+            <a href="{{ path('app_lesson_new', {'course': course.id}) }}" class="btn btn-success">Добавить урок</a>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Слушаем события удаления урока через WebSocket или Ajax
+            // Обновляем список уроков, если урок был удалён
+            window.addEventListener("lessonDeleted", function(event) {
+                let lessonId = event.detail.lessonId;
+                document.getElementById("lesson-" + lessonId).remove();
+            });
+        });
+    </script>
+{% endblock %}

@@ -1,0 +1,25 @@
+{{ form_start(form) }}
+
+<div class="form-group mb-3">
+    {{ form_label(form.characterCode, null, {'label_attr': {'class': 'form-label'}}) }}
+    {{ form_widget(form.characterCode, {'attr': {'class': 'form-control'}}) }}
+    {{ form_errors(form.characterCode) }}
+</div>
+
+<div class="form-group mb-3">
+    {{ form_label(form.name, null, {'label_attr': {'class': 'form-label'}}) }}
+    {{ form_widget(form.name, {'attr': {'class': 'form-control'}}) }}
+    {{ form_errors(form.name) }}
+</div>
+
+<div class="form-group mb-3">
+    {{ form_label(form.description, null, {'label_attr': {'class': 'form-label'}}) }}
+    {{ form_widget(form.description, {'attr': {'class': 'form-control'}}) }}
+    {{ form_errors(form.description) }}
+</div>
+
+<div class="d-flex justify-content-between">
+    <button class="btn btn-primary">{{ button_label|default('Сохранить') }}</button>
+</div>
+
+{{ form_end(form) }}
