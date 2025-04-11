@@ -3,19 +3,19 @@
 <div class="form-group mb-3">
     {{ form_label(form.nameLesson, null, {'label_attr': {'class': 'form-label'}}) }}
     {{ form_widget(form.nameLesson, {'attr': {'class': 'form-control'}}) }}
-    {{ form_errors(form.nameLesson) }}
+    {{ form_errors(form.nameLesson, {'attr': {'class': 'text-danger'}}) }}  <!-- Ошибки для nameLesson -->
 </div>
 
 <div class="form-group mb-3">
     {{ form_label(form.lessonContent, null, {'label_attr': {'class': 'form-label'}}) }}
     {{ form_widget(form.lessonContent, {'attr': {'class': 'form-control'}}) }}
-    {{ form_errors(form.lessonContent) }}
+    {{ form_errors(form.lessonContent, {'attr': {'class': 'text-danger'}}) }}  <!-- Ошибки для lessonContent -->
 </div>
 
 <div class="form-group mb-3">
     {{ form_label(form.orderNumber, null, {'label_attr': {'class': 'form-label'}}) }}
     {{ form_widget(form.orderNumber, {'attr': {'class': 'form-control'}}) }}
-    {{ form_errors(form.orderNumber) }}
+    {{ form_errors(form.orderNumber, {'attr': {'class': 'text-danger'}}) }}  <!-- Ошибки для orderNumber -->
 </div>
 
 <div class="d-flex justify-content-between">

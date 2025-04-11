@@ -23,22 +23,28 @@ class Lesson
     #[Assert\NotBlank(message: "Название урока не может быть пустым.")]
     #[Assert\Length(
         min: 3,
-        max: 255
+        max: 255,
+        maxMessage: "Название урока не может быть длиннее 255 символов."
     )]
     private ?string $nameLesson = null;
 
     #[ORM\Column(type: Types::TEXT)]
-    #[Assert\NotBlank(message: "Описание не может быть пустым.")]
+    #[Assert\NotBlank(message: "Содержание урока не может быть пустым.")]
     #[Assert\Length(
         min: 3,
-        max: 1000
-
+        max: 1000,
+        maxMessage: "Содержание урока не может быть длиннее 1000 символов."
     )]
     private ?string $lessonContent = null;
 
     #[ORM\Column(nullable: true)]
-    #[Assert\Positive(message: "Цена урока должна быть положительным числом.")]
-    #[Assert\Range(notInRangeMessage: 'Цена курса не должна превышать {{ max }} рублей.', max: 10000,)]
+    #[Assert\NotBlank(message: "Порядковый номер не может быть пустым.")]
+    #[Assert\Positive(message: "Порядковый номер должен быть положительным числом.")]
+    #[Assert\Range(
+        min: 1,
+        max: 10000,
+        notInRangeMessage: "Порядковый номер должен быть от 1 до 10 000."
+    )]
     private ?int $orderNumber = null;
 
     public function getId(): ?int

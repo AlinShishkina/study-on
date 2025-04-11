@@ -1,15 +1,37 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Создать новый курс{% endblock %}
+{% block title %}Новый курс{% endblock %}
 
 {% block body %}
     <div class="container mt-5">
-        <h1 class="text-center mb-4">Создайте новый курс</h1>
+        <h1 class="text-center mb-4">Создать курс</h1>
 
-        {{ include('course/_form.html.twig') }}
-
-        <div class="mt-3 text-center">
-            <a href="{{ path('app_course_index') }}" class="btn btn-secondary">Вернуться к списку курсов</a>
+        {{ form_start(form) }}
+        <div class="mb-3">
+            {{ form_label(form.name) }}
+            {{ form_widget(form.name, {'attr': {'class': 'form-control'}}) }}
+            {% for error in form.name.vars.errors %}
+                <div class="form-error-message text-danger">{{ error.message }}</div>
+            {% endfor %}
         </div>
+
+        <div class="mb-3">
+            {{ form_label(form.characterCode) }}
+            {{ form_widget(form.characterCode, {'attr': {'class': 'form-control'}}) }}
+            {% for error in form.characterCode.vars.errors %}
+                <div class="form-error-message text-danger">{{ error.message }}</div>
+            {% endfor %}
+        </div>
+
+        <div class="mb-3">
+            {{ form_label(form.description) }}
+            {{ form_widget(form.description, {'attr': {'class': 'form-control'}}) }}
+            {% for error in form.description.vars.errors %}
+                <div class="form-error-message text-danger">{{ error.message }}</div>
+            {% endfor %}
+        </div>
+
+        <button class="btn btn-success">Сохранить</button>
+        {{ form_end(form) }}
     </div>
 {% endblock %}

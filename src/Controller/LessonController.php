@@ -10,7 +10,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Annotation\Route;
 
 #[Route('/lessons')]
 final class LessonController extends AbstractController
@@ -24,11 +24,16 @@ final class LessonController extends AbstractController
         $form = $this->createForm(LessonType::class, $lesson);
         $form->handleRequest($request);
 
-        if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager->persist($lesson);
-            $entityManager->flush();
+        if ($form->isSubmitted()) {
+            if ($form->isValid()) {
+                $entityManager->persist($lesson);
+                $entityManager->flush();
 
-            return $this->redirectToRoute('app_course_show', ['id' => $course->getId()], Response::HTTP_SEE_OTHER);
+                return $this->redirectToRoute('app_course_show', ['id' => $course->getId()], Response::HTTP_SEE_OTHER);
+            } else {
+                // Если форма невалидна, выводим ошибки на странице
+                $this->addFlash('error', 'При валидации возникли ошибки.');
+            }
         }
 
         return $this->render('lesson/new.html.twig', [
@@ -72,6 +77,9 @@ final class LessonController extends AbstractController
         if ($this->isCsrfTokenValid('delete'.$lesson->getId(), $request->request->get('_token'))) {
             $entityManager->remove($lesson);
             $entityManager->flush();
+
+            // Можно добавить сообщение об успешном удалении
+            $this->addFlash('success', 'Урок успешно удалён.');
         }
 
         return $this->redirectToRoute('app_course_show', ['id' => $lesson->getCourse()->getId()], Response::HTTP_SEE_OTHER);

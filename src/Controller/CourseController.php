@@ -79,6 +79,6 @@ final class CourseController extends AbstractController
             $this->addFlash('success', 'Курс успешно удалён.');
         }
 
-        return $this->redirectToRoute('app_course_index');
+        return $this->redirectToRoute('app_course_index', [], Response::HTTP_SEE_OTHER);
     }
 }
