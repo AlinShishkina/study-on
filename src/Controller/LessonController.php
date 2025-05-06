@@ -5,19 +5,47 @@ namespace App\Controller;
 use App\Entity\Course;
 use App\Entity\Lesson;
 use App\Form\LessonType;
+use App\Repository\CourseRepository;
 use App\Repository\LessonRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/lessons')]
-final class LessonController extends AbstractController
+class LessonController extends AbstractController
 {
-    #[Route('/new/{course}', name: 'app_lesson_new', methods: ['GET', 'POST'])]
-    public function new(Request $request, EntityManagerInterface $entityManager, Course $course): Response
+    /**
+     * Отображает список всех уроков
+     */
+    #[Route('/', name: 'app_lesson_index', methods: ['GET'])]
+    public function index(LessonRepository $lessonRepository): Response
     {
+        return $this->render('lesson/index.html.twig', [
+            'lessons' => $lessonRepository->findAll(),
+        ]);
+    }
+
+    /**
+     * Создание нового урока, привязанного к курсу
+     * Доступно только для пользователей с ролью SUPER_ADMIN
+     */
+    #[IsGranted('ROLE_SUPER_ADMIN')]
+    #[Route('/new/{id}', name: 'app_lesson_new', methods: ['GET', 'POST'])]
+    public function new(
+        Request $request,
+        int $id,
+        CourseRepository $courseRepository,
+        EntityManagerInterface $entityManager
+    ): Response {
+        $course = $courseRepository->find($id);
+
+        if (!$course) {
+            throw $this->createNotFoundException('Курс не найден');
+        }
+
         $lesson = new Lesson();
         $lesson->setCourse($course);
 
@@ -29,20 +57,27 @@ final class LessonController extends AbstractController
                 $entityManager->persist($lesson);
                 $entityManager->flush();
 
-                return $this->redirectToRoute('app_course_show', ['id' => $course->getId()], Response::HTTP_SEE_OTHER);
+                $this->addFlash('success', 'Урок успешно создан.');
+                return $this->redirectToRoute('app_course_show', [
+                    'id' => $course->getId()
+                ], Response::HTTP_SEE_OTHER);
             } else {
-                // Если форма невалидна, выводим ошибки на странице
-                $this->addFlash('error', 'При валидации возникли ошибки.');
+                $this->addFlash('error', 'Форма заполнена некорректно.');
             }
         }
 
         return $this->render('lesson/new.html.twig', [
             'lesson' => $lesson,
-            'course' => $course,
             'form' => $form,
+            'course' => $course,
         ]);
     }
 
+    /**
+     * Отображение одного урока
+     * Доступно для пользователей с ролью USER и выше
+     */
+    #[IsGranted('ROLE_USER')]
     #[Route('/{id}', name: 'app_lesson_show', methods: ['GET'])]
     public function show(Lesson $lesson): Response
     {
@@ -52,36 +87,62 @@ final class LessonController extends AbstractController
         ]);
     }
 
+    /**
+     * Редактирование существующего урока
+     * Доступно только для пользователей с ролью SUPER_ADMIN
+     */
+    #[IsGranted('ROLE_SUPER_ADMIN')]
     #[Route('/{id}/edit', name: 'app_lesson_edit', methods: ['GET', 'POST'])]
-    public function edit(Request $request, Lesson $lesson, EntityManagerInterface $entityManager): Response
-    {
+    public function edit(
+        Request $request,
+        Lesson $lesson,
+        EntityManagerInterface $entityManager
+    ): Response {
         $form = $this->createForm(LessonType::class, $lesson);
         $form->handleRequest($request);
 
-        if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager->flush();
+        if ($form->isSubmitted()) {
+            if ($form->isValid()) {
+                $entityManager->flush();
 
-            return $this->redirectToRoute('app_lesson_show', ['id' => $lesson->getId()], Response::HTTP_SEE_OTHER);
+                $this->addFlash('success', 'Урок успешно обновлён.');
+                return $this->redirectToRoute('app_course_show', [
+                    'id' => $lesson->getCourse()->getId()
+                ], Response::HTTP_SEE_OTHER);
+            } else {
+                $this->addFlash('error', 'Форма заполнена некорректно.');
+            }
         }
 
         return $this->render('lesson/edit.html.twig', [
             'lesson' => $lesson,
-            'course' => $lesson->getCourse(),
             'form' => $form,
+            'course' => $lesson->getCourse(),
         ]);
     }
 
+    /**
+     * Удаление урока
+     * Доступно только для пользователей с ролью SUPER_ADMIN
+     */
+    #[IsGranted('ROLE_SUPER_ADMIN')]
     #[Route('/{id}', name: 'app_lesson_delete', methods: ['POST'])]
-    public function delete(Request $request, Lesson $lesson, EntityManagerInterface $entityManager): Response
-    {
+    public function delete(
+        Request $request,
+        Lesson $lesson,
+        EntityManagerInterface $entityManager
+    ): Response {
         if ($this->isCsrfTokenValid('delete'.$lesson->getId(), $request->request->get('_token'))) {
             $entityManager->remove($lesson);
             $entityManager->flush();
 
-            // Можно добавить сообщение об успешном удалении
             $this->addFlash('success', 'Урок успешно удалён.');
+        } else {
+            $this->addFlash('error', 'CSRF токен недействителен.');
         }
 
-        return $this->redirectToRoute('app_course_show', ['id' => $lesson->getCourse()->getId()], Response::HTTP_SEE_OTHER);
+        return $this->redirectToRoute('app_course_show', [
+            'id' => $lesson->getCourse()->getId()
+        ], Response::HTTP_SEE_OTHER);
     }
 }

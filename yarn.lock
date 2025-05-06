@@ -931,7 +931,7 @@
   resolved "https://registry.npmjs.org/@symfony/stimulus-bundle/-/stimulus-bundle-2.24.0.tgz"
   integrity sha512-8YUmBiypaJsSPMKMJoHZm0AbNQ/pVxdpwUgJI3xu4dpwUhwPvQc20BQORuhdpAsaZP5y4zEIsvFDDuHcwPk1Ow==
 
-"@symfony/ux-turbo@^2.24.0":
+"@symfony/ux-turbo@file:vendor/symfony/ux-turbo/assets":
   version "2.24.0"
   resolved "https://registry.npmjs.org/@symfony/ux-turbo/-/ux-turbo-2.24.0.tgz"
   integrity sha512-iWGl24R+6urBErF95mDAcBL9ZwXpMUR9lXB98KOyyZsi/UUYHRsIzKWR8oYB70G6PwE6egrUH2SJSPzvkZnHLg==

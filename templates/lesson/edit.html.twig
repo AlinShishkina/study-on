@@ -3,15 +3,12 @@
 {% block title %}Редактировать урок{% endblock %}
 
 {% block body %}
-    <div class="container mt-5">
-        <h2 style="cursor: pointer" class="text-start text-white "><a href="{{ path('app_course_show', {'id': course.id}) }}">{{ course.name }}</a></h2>
-        <h1 class="text-center mb-4">{{ lesson.nameLesson }}</h1>
+    <h1>Редактировать урок</h1>
 
-        {{ include('lesson/_form.html.twig', {'button_label': 'Обновить'}) }}
+    {{ include('lesson/_form.html.twig', {'button_label': 'Сохранить'}) }}
 
-        {{ include('lesson/_delete_form.html.twig') }}
-        <div class="mt-3 text-start">
-            <a href="{{ path('app_course_show', {'id': course.id}) }}" class="btn btn-secondary">Вернуться к курсу</a>
-        </div>
-    </div>
+    {{ include('lesson/_delete_form.html.twig') }}
+    
+    <a class="btn btn-outline-secondary mt-3" href="{{ path('app_course_show', {'id': lesson.course.id}) }}">Вернуться к списку уроков</a>
+
 {% endblock %}

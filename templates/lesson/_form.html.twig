@@ -1,25 +1,4 @@
 {{ form_start(form) }}
-
-<div class="form-group mb-3">
-    {{ form_label(form.nameLesson, null, {'label_attr': {'class': 'form-label'}}) }}
-    {{ form_widget(form.nameLesson, {'attr': {'class': 'form-control'}}) }}
-    {{ form_errors(form.nameLesson, {'attr': {'class': 'text-danger'}}) }}  <!-- Ошибки для nameLesson -->
-</div>
-
-<div class="form-group mb-3">
-    {{ form_label(form.lessonContent, null, {'label_attr': {'class': 'form-label'}}) }}
-    {{ form_widget(form.lessonContent, {'attr': {'class': 'form-control'}}) }}
-    {{ form_errors(form.lessonContent, {'attr': {'class': 'text-danger'}}) }}  <!-- Ошибки для lessonContent -->
-</div>
-
-<div class="form-group mb-3">
-    {{ form_label(form.orderNumber, null, {'label_attr': {'class': 'form-label'}}) }}
-    {{ form_widget(form.orderNumber, {'attr': {'class': 'form-control'}}) }}
-    {{ form_errors(form.orderNumber, {'attr': {'class': 'text-danger'}}) }}  <!-- Ошибки для orderNumber -->
-</div>
-
-<div class="d-flex justify-content-between">
-    <button class="btn btn-primary">{{ button_label|default('Сохранить') }}</button>
-</div>
-
+    {{ form_widget(form) }}
+    <button class="btn btn-primary mt-3" class="btn">{{ button_label|default('Сохранить') }}</button>
 {{ form_end(form) }}

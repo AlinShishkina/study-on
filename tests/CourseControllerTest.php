@@ -2,342 +2,253 @@
 
 namespace App\Tests;
 
-use App\Entity\Course;
-use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
-use Symfony\Component\HttpFoundation\Response;
-use Doctrine\Common\DataFixtures\Loader;
-use Doctrine\Common\DataFixtures\Purger\ORMPurger;
-use Doctrine\Common\DataFixtures\Executor\ORMExecutor;
-use Doctrine\Persistence\ObjectManager;
-use Doctrine\Bundle\FixturesBundle\Fixture;
 use App\DataFixtures\CourseFixtures;
+use App\Entity\Course;
+use App\Entity\Lesson;
+use Symfony\Component\HttpFoundation\Response;
 
-class CourseControllerTest extends WebTestCase
+class CourseControllerTest extends AbstractTest
 {
-    public function testCoursesList(): void
-{
-    $client = static::createClient();
-    $entityManager = $client->getContainer()->get('doctrine')->getManager();
-
-  
-    $crawler = $client->request('GET', '/courses/');
-    
-    $this->assertResponseIsSuccessful();
-    
-    // Получаем все курсы из базы данных
-    $courses = $entityManager->getRepository(Course::class)->findAll();
-
-    // Находим строки в таблице, где отображаются курсы
-    $shownCourses = $crawler->filter('table.table tbody tr');
-
-    // Проверка, что количество строк в таблице совпадает с количеством курсов
-    $this->assertCount(count($courses), $shownCourses);
-}
-
-//  Тест на отображение существующих курсов
-
-public function testShowExistingCourse(): void
-{
-    $client = static::createClient();
-    $entityManager = $client->getContainer()->get('doctrine')->getManager();
-
-    // Создание тестового курса 
-    $course = new Course();
-    $course->setName('Test Course');
-    $course->setCharacterCode('T123'); 
-    $entityManager->persist($course);
-    $entityManager->flush();
-
-    $crawler = $client->request('GET', '/courses/');
-    $this->assertResponseIsSuccessful();
-    $firstCourseLink = $crawler->filter('table.table tbody tr td a')->first()->link();
-    $crawler = $client->click($firstCourseLink);
-    $this->assertResponseIsSuccessful();
-}
-
-//  Тест на несуществующий курс
-
-public function testShowNonExistingCourse(): void
+    protected function getFixtures(): array
     {
-        $client = static::createClient();
+        return [CourseFixtures::class];
+    }
 
-        $client->request('GET', '/courses/999999');
-        $this->assertResponseStatusCodeSame(Response::HTTP_NOT_FOUND);
+    // Проверка корректных статусов GET и содержимого ответа
+    public function testGetActionsResponseOk(): void
+    {
+        $client = self::getClient();
+        $entityManager = self::getEntityManager();
+        $courses = $entityManager->getRepository(Course::class)->findAll();
+
+        // Проверка списка всех курсов
+        $client->request('GET', '/courses');
+        $this->assertResponseOk();
+        $this->assertCount(count($courses), $client->getCrawler()->filter('.course-item'));
+
+        // Проверка страницы создания курса
+        $client->request('GET', '/courses/new');
+        $this->assertResponseOk();
+    }
+
+    // Проверка на 404
+    public function urlProviderNotFound(): array
+    {
+        return [
+            ['/courses/99999'],
+            ['/lessons/99999'],
+            ['/courses/99999'],
+        ];
+    }
+
+    /**
+     * @dataProvider urlProviderNotFound
+     */
+    public function testPageNotFound($url): void
+    {
+        $client = self::getClient();
+        $client->request('GET', $url);
+        $this->assertResponseNotFound();
+    }
+
+    // Проверка корректных POST-запросов
+    public function testPostActionsResponseOk(): void
+    {
+        $client = self::getClient();
+        $entityManager = self::getEntityManager();
+        $courses = $entityManager->getRepository(Course::class)->findAll();
+
+        foreach ($courses as $course) {
+            // Проверка редактирования курса (POST)
+            $client->request('POST', '/courses/' . $course->getId() . '/edit', [
+                'name' => 'Updated Name',
+                'description' => 'Updated Description'
+            ]);
+            $this->assertResponseOk();
+        }
+
+        // Проверка создания нового курса (POST)
+        $client->request('POST', '/courses/new', [
+            'name' => 'Новый курс',
+            'CharacterCode' => 'new-course',
+            'description' => 'Описание нового курса'
+        ]);
+        $this->assertResponseOk();
     }
 
 
-    // Тест на загрузку страницы "Создать новый курс"
-
-    public function testNewCourseGet(): void
+    // тест на успешное создание курса
+    public function testCreateCourse(): void
     {
-        $client = static::createClient();
-        $crawler = $client->request('GET', '/courses/');
-    
-        $this->assertResponseIsSuccessful();
-        $this->assertSelectorExists('a:contains("Создать курс")');
-    
-        $link = $crawler->selectLink('Создать курс')->link();
+        // список курсов
+        $client = self::getClient();
+        $crawler = $client->request('GET', '/courses');
+        $this->assertResponseOk();
+
+        // Нажимаем кнопку "Создать новый курс"
+        $addCourse = $crawler->selectLink('Создать новый курс')->link();
+        $crawler = $client->click($addCourse);
+        $this->assertResponseOk();
+
+        // заполняем форму на странице создания курса
+        $form = $crawler->selectButton('Сохранить')->form([
+            'course[characterCode]' => 'new-course',
+            'course[name]' => 'Новый курс',
+            'course[description]' => 'Описание нового курса'
+        ]);
+        $client->submit($form);
+
+        // редирект
+        $this->assertSame($client->getResponse()->headers->get('location'), '/courses');
+        $client->followRedirect();
+        $this->assertResponseOk();
+
+        // Теперь получаем список курсов
+        $crawler = $client->request('GET', '/courses');
+        $this->assertResponseOk();
+
+        // Находим последний добавленный курс, проверяя по названию и по описанию
+        $lastCourse = $crawler->filter('.course-name')->last();
+        $this->assertSame('Новый курс', $lastCourse->text());
+
+        $courseDescription = $crawler->filter('.course-description')->last();
+        $this->assertSame('Описание нового курса', $courseDescription->text());
+    }
+
+
+    // тест на ошибочное создание курса
+    public function testCreateCourseError(): void
+    {
+        // список курсов
+        $client = self::getClient();
+        $crawler = $client->request('GET', '/courses');
+        $this->assertResponseOk();
+
+        // Нажимаем кнопку "Создать новый курс"
+        $addCourse = $crawler->selectLink('Создать новый курс')->link();
+        $crawler = $client->click($addCourse);
+        $this->assertResponseOk();
+
+        // допускаем ошибку в characterCode
+        $form = $crawler->selectButton('Сохранить')->form([
+            'course[characterCode]' => 'ff',
+            'course[name]' => 'Новый курс',
+            'course[description]' => 'Описание нового курса',
+
+        ]);
+        $client->submit($form);
+        $this->assertResponseCode(422);
+
+        self::assertSelectorTextContains(
+            'div',
+            'Код курса должен содержать минимум 3 символа.'
+        );
+
+
+        // допускаем ошибку в name
+        $form = $crawler->selectButton('Сохранить')->form([
+            'course[characterCode]' => 'new-course',
+            'course[name]' => 'aa',
+            'course[description]' => 'Описание нового курса',
+
+        ]);
+        $client->submit($form);
+        $this->assertResponseCode(422);
+
+        self::assertSelectorTextContains(
+            'div',
+            'Название должно содержать минимум 3 символа.'
+        );
+
+
+        // допускаем ошибку в description
+        $form = $crawler->selectButton('Сохранить')->form([
+            'course[characterCode]' => 'new-course',
+            'course[name]' => 'Новый курс',
+            'course[description]' => 'ff',
+
+        ]);
+        $client->submit($form);
+        $this->assertResponseCode(422);
+
+        self::assertSelectorTextContains(
+            'div',
+            'Описание должно содержать минимум 3 символа.'
+        );
+
+    }
+
+
+    // тест на успешное редактирование курса
+    public function testEditCourse(): void
+    {
+        $entityManager = self::getEntityManager();
+
+        // список курсов
+        $client = self::getClient();
+        $crawler = $client->request('GET', '/courses');
+        $this->assertResponseOk();
+
+        // переходим на первый курс
+        $link = $crawler->filter('.course-item')->link();
         $crawler = $client->click($link);
-    
-        // Проверка, что загрузилась страница создания курса
-        $this->assertResponseIsSuccessful();
-    
-        // Проверка наличия полей формы
-        $this->assertSelectorExists('input[name="course[name]"]');
-        $this->assertSelectorExists('input[name="course[characterCode]"]');
-        $this->assertSelectorExists('textarea[name="course[description]"]');
+        $this->assertResponseOk();
+
+        // получаем ID курса до редактирования
+        $courseId = $client->getRequest()->attributes->get('id');
+
+
+        // открываем страницу редактирования курса
+        $editLink = $crawler->selectLink('Редактировать курс')->link();
+        $crawler = $client->click($editLink);
+        $this->assertResponseOk();
+
+
+        // заполняем форму на странице редактирования курса и получаем id
+        $form = $crawler->selectButton('Сохранить')->form([
+            'course[characterCode]' => 'new-course',
+            'course[name]' => 'Новый курс',
+            'course[description]' => 'Описание нового курса'
+        ]);
+        $client->submit($form);
+
+        // редирект
+        $crawler = $client->followRedirect();
+        self::assertRouteSame('app_course_show', ['id' => $courseId]);
+        $this->assertResponseOk();
+
+        // проверяем, что данные обновились
+        $this->assertSame($crawler->filter('.text-center')->text(), 'Новый курс');
+
     }
-    
- // Тест на то, что новый курс создался и отобразился на фронтенде
-
- public function testNewCoursePostValidData(): void
-{
-    $client = static::createClient();
-    $entityManager = $client->getContainer()->get('doctrine')->getManager();
-
-    $coursesBeforeCount = count($entityManager->getRepository(Course::class)->findAll());
-    $crawler = $client->request('GET', '/courses/');
-    $this->assertResponseIsSuccessful();
-    $link = $crawler->selectLink('Создать курс')->link();
-    $crawler = $client->click($link);
-    $this->assertResponseIsSuccessful();
-    $form = $crawler->selectButton('Сохранить')->form([
-        'course[name]' => 'Тестовый курс',
-        'course[characterCode]' => 'test-code-123',
-        'course[description]' => 'Тестовое описание',
-    ]);
-
-    $client->submit($form);
-
-    // Проверка редиректа (303 See Other)
-    $this->assertResponseRedirects('/courses/', Response::HTTP_SEE_OTHER);
-    $client->followRedirect();
-    $this->assertResponseIsSuccessful();
-
-    // Проверка, что курс добавлен
-    $coursesAfter = $entityManager->getRepository(Course::class)->findAll();
-    $this->assertCount($coursesBeforeCount + 1, $coursesAfter);
-
-    $newCourse = $entityManager->getRepository(Course::class)->findOneBy([
-        'characterCode' => 'test-code-123',
-    ]);
-
-    $this->assertNotNull($newCourse);
-    $this->assertEquals('Тестовый курс', $newCourse->getName());
-    $this->assertEquals('Тестовое описание', $newCourse->getDescription());
-
-    // Проверка, что отображается на странице
-    $crawler = $client->request('GET', '/courses/');
-    $this->assertResponseIsSuccessful();
-    $this->assertSelectorTextContains('body', 'Тестовый курс');
-}
 
 
-// Тест на пустоту кода урока
-public function testNewPostEmptyCode(): void
-{
-    $client = static::createClient();
+    // тест на успешное удаление курса
+    public function testDeleteCourse(): void
+    {
+        $client = self::getClient();
+        $entityManager = self::getEntityManager();
 
+        // список курсов
+        $crawler = $client->request('GET', '/courses');
+        $this->assertResponseOk();
 
-    $crawler = $client->request('GET', '/courses/');
-    $this->assertResponseIsSuccessful();
+        // сохраняем кол-во курсов до удаления
+        $coursesCountBefore = count($entityManager->getRepository(Course::class)->findAll());
 
-    $link = $crawler->filter('a:contains("Создать курс")')->link();
-    $crawler = $client->click($link);
+        // Находим и кликаем кнопку "Удалить" у первого курса
+        $deleteForm = $crawler->filter('.delete-button')->first()->form();
+        $client->submit($deleteForm);
 
-    $this->assertResponseIsSuccessful();
+        // Проверяем редирект после удаления
+        self::assertResponseRedirects();
+        $crawler = $client->followRedirect();
+        $this->assertResponseOk();
+        self::assertRouteSame('app_course_index');
 
-    $formButton = $crawler->selectButton('Сохранить');
-
-    $form = $formButton->form([
-        'course[name]' => 'Тестовый курс',
-        'course[characterCode]' => '', 
-        'course[description]' => 'Тестовое описание',
-    ]);
-
-    $crawler = $client->submit($form);
-
-    echo $client->getResponse()->getContent();
-
-    $this->assertResponseStatusCodeSame(422);
-    $content = $client->getResponse()->getContent();
-    $this->assertStringContainsString(
-        'Код курса не может быть пустым', 
-        $content
-    );
-}
-
-// Тест на то что курс с таким кодом существует 
-
-public function testNewPostNotUniqueCode(): void
-{
-    $client = static::createClient();
-    $entityManager = $client->getContainer()->get('doctrine')->getManager();
-    $existingCourse = $entityManager->getRepository(Course::class)->findOneBy([]);
-    $crawler = $client->request('GET', '/courses/');
-    $this->assertResponseIsSuccessful();
-    $link = $crawler->filter('a:contains("Создать курс")')->link();
-    $crawler = $client->click($link);
-    $this->assertResponseIsSuccessful();
-    $formButton = $crawler->selectButton('Сохранить');
-    
-    $form = $formButton->form([
-        'course[name]' => 'Тестовый курс',
-        'course[characterCode]' => $existingCourse->getCharacterCode(), 
-        'course[description]' => 'Тестовое описание',
-    ]);
-
-    $crawler = $client->submit($form);
-    $this->assertResponseStatusCodeSame(422);
-    $content = $client->getResponse()->getContent();
-    $this->assertStringContainsString(
-        'Курс с таким кодом уже существует', 
-        $content
-    );
-}
-
-
-// Тест на то что код написан неправильно
-
-public function testNewPostInvalidCode(): void
-{
-    $client = static::createClient();
-    $entityManager = $client->getContainer()->get('doctrine')->getManager();
-    $existingCourse = $entityManager->getRepository(Course::class)->findOneBy([]);
-    $crawler = $client->request('GET', '/courses/');
-    $this->assertResponseIsSuccessful();
-    $link = $crawler->filter('a:contains("Создать курс")')->link();
-    $crawler = $client->click($link);
-
-    $this->assertResponseIsSuccessful();
-
-    $formButton = $crawler->selectButton('Сохранить');
-    
-    $form = $formButton->form([
-        'course[name]' => 'Тестовый курс',
-        'course[characterCode]' => '1890+#/.!,',
-        'course[description]' => 'Тестовое описание',
-    ]);
-
-    $crawler = $client->submit($form);
-
-    $this->assertResponseStatusCodeSame(422);
-
-    $content = $client->getResponse()->getContent();
-    $this->assertStringContainsString(
-        'Код курса может содержать только буквы, цифры, дефисы и подчеркивания', 
-        $content
-    );
-}
-
-// Тест на непустое название курса
-
-public function testNewPostEmptyName(): void
-{
-    $client = static::createClient();
-    $entityManager = $client->getContainer()->get('doctrine')->getManager();
-    $existingCourse = $entityManager->getRepository(Course::class)->findOneBy([]);
-
-    $crawler = $client->request('GET', '/courses/');
-    $this->assertResponseIsSuccessful();
-
-    $link = $crawler->filter('a:contains("Создать курс")')->link();
-    $crawler = $client->click($link);
-
-    $this->assertResponseIsSuccessful();
-
-
-    $formButton = $crawler->selectButton('Сохранить');
-    
-    $form = $formButton->form([
-        'course[name]' => '', // Пустое название
-        'course[characterCode]' => '123',
-        'course[description]' => 'тестовое описание',
-    ]);
-
-    $crawler = $client->submit($form);
-
-    $this->assertResponseStatusCodeSame(422);
-
-    $content = $client->getResponse()->getContent();
-    $this->assertStringContainsString(
-        'Название курса не может быть пустым', 
-        $content
-    );
-}
-
-public function testEditPostLongTitle(): void
-{
-    $client = static::createClient();
-    $entityManager = $client->getContainer()->get('doctrine')->getManager();
-
-    $crawler = $client->request('GET', '/courses/');
-    $this->assertResponseIsSuccessful();
-
-    $firstCourseLink = $crawler->filter('table.table tbody tr td a')->first()->link();
-    $crawler = $client->click($firstCourseLink);
-    $this->assertResponseIsSuccessful();
-
-    $link = $crawler->filter('a:contains("Редактировать курс")')->link();
-    $crawler = $client->click($link);
-    $this->assertResponseIsSuccessful();
-
-    $formButton = $crawler->selectButton('Обновить');
-    $form = $formButton->form();
-
-    // Получаем текущие значения для проверки после отправки
-    $courseCode = $form['course[characterCode]']->getValue();
-    $courseTitleBefore = $form['course[name]']->getValue();
-
-    // Заполняем форму с длинным названием
-    $form['course[name]'] = str_repeat('LONG_TITLE_', 100); // >255 символов
-    $form['course[characterCode]'] = $courseCode;
-
-    $client->submit($form);
-
-    $this->assertResponseStatusCodeSame(422);
-
-    $content = $client->getResponse()->getContent();
-    $this->assertStringContainsString(
-        'Название курса не может быть длиннее 255 символов',
-        $content
-    );
-
-
-
-$sameCourse = $entityManager->getRepository(Course::class)->findOneBy(['characterCode' => $courseCode]);
-$this->assertEquals($courseTitleBefore, $sameCourse->getName());
+        // проверяем что курс удален
+        $coursesCountAfter = count($entityManager->getRepository(Course::class)->findAll());
+        $this->assertSame($coursesCountAfter, $coursesCountBefore - 1);
+    }
 
 }
-
-
-public function testDelete(): void
-{
-    $client = static::createClient();
-    $this->loadFixtures();
-
-    // Теперь тест будет работать
-    $crawler = $client->request('GET', '/courses/');
-    $this->assertResponseIsSuccessful();
-
-    $deleteForms = $crawler->filter('form[action^="/courses/"][method="post"]');
-    $this->assertGreaterThan(0, $deleteForms->count(), 'Форма удаления не найдена');
-
-    $formNode = $deleteForms->first();
-    $action = $formNode->attr('action');
-    $csrfToken = $formNode->filter('input[name="_token"]')->attr('value');
-
-    $client->request('POST', $action, [
-        '_token' => $csrfToken,
-    ]);
-
-    $this->assertResponseRedirects('/courses/');
-    $client->followRedirect();
-    $this->assertSelectorTextNotContains('body', 'Тестовый курс');
-}
-}
-
-
-
-
-

@@ -1,43 +1,37 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Courses{% endblock %}
+{% block title %}Курсы{% endblock %}
 
 {% block body %}
-    <div class="container mt-5">
-        <h1 class="text-center mb-4">Курсы</h1>
+<div class="container">
+    <h1 class="fw-bolder">Курсы</h1>
 
-        <table class="table table-striped table-bordered">
-            <thead class="thead-dark">
-            <tr>
-                <th>Name</th>
-                <th>Description</th>
-                <th>Actions</th>
-            </tr>
-            </thead>
-            <tbody>
-            {% for course in courses %}
-                <tr>
-                    <td><a href="{{ path('app_course_show', {'id': course.id}) }}" class="text-decoration-none text-primary course-item">{{ course.name }}</a></td>
-                    <td>{{ course.description }}</td>
-
-                    <td>
-                        <form action="{{ path('app_course_delete', {'id': course.id}) }}" method="post" onsubmit="return confirm('Вы уверены?');">
-                            <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ course.id) }}">
-                            <button type="submit" class="btn btn-danger btn-sm">Удалить</button>
-                        </form>
-                    </td>
-                </tr>
-            {% else %}
-                <tr>
-                    <td colspan="3" class="text-center">No courses found</td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-        <hr>
-
-        <div class="text-center">
-            <a href="{{ path('app_course_new') }}" class="btn btn-success">Создать курс</a>
-        </div>
-    </div>
+    <table class="table">
+        
+        
+            <div class="row gx-5">
+                {% for course in courses %}
+                <div class="col-md-6">
+                    <div class="card p-1 m-3">
+                        <div class="card-body">
+                            <h3>{{ course.name }}</h3>                       
+                            <p>{{ course.description }}</p>
+                            <a class="btn btn-primary link-course" href="{{ path('app_course_show', {'id': course.id}) }}">
+                                Пройти курс
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            
+                {% else %}
+                    <tr>
+                        <td colspan="5">no records found</td>
+                    </tr>
+                {% endfor %}
+            </div>        
+        </div>    
+    </table>
+    {% if is_granted('ROLE_SUPER_ADMIN') %}
+        <a class="btn btn-outline-primary" href="{{ path('app_course_new') }}">Новый курс</a>
+    {% endif %}
 {% endblock %}

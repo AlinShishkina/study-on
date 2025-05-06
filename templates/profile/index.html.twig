@@ -1,0 +1,16 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Профиль{% endblock %}
+
+{% block body %}
+<h1>Профиль</h1>
+
+<div class="container">
+    <div>Email: {{ app.user.email }}</div>
+    <div>Роль: {{ app.user.roles|join(', ') }}</div>
+    <div>Баланс: {{ app.user.balance }}</div>
+
+    <a class="btn btn-outline-secondary mt-3" href="{{ path('app_course_index') }}">Вернуться к списку курсов</a>
+    <a class="btn btn-outline-danger mt-3" href="{{ path('app_logout') }}">Выйти</a>
+</div>
+{% endblock %}

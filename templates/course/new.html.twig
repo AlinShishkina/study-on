@@ -1,37 +1,11 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Новый курс{% endblock %}
+{% block title %}Создание нового курса{% endblock %}
 
 {% block body %}
-    <div class="container mt-5">
-        <h1 class="text-center mb-4">Создать курс</h1>
+    <h1>Создание нового курса</h1>
 
-        {{ form_start(form) }}
-        <div class="mb-3">
-            {{ form_label(form.name) }}
-            {{ form_widget(form.name, {'attr': {'class': 'form-control'}}) }}
-            {% for error in form.name.vars.errors %}
-                <div class="form-error-message text-danger">{{ error.message }}</div>
-            {% endfor %}
-        </div>
+    {{ include('course/_form.html.twig') }}
 
-        <div class="mb-3">
-            {{ form_label(form.characterCode) }}
-            {{ form_widget(form.characterCode, {'attr': {'class': 'form-control'}}) }}
-            {% for error in form.characterCode.vars.errors %}
-                <div class="form-error-message text-danger">{{ error.message }}</div>
-            {% endfor %}
-        </div>
-
-        <div class="mb-3">
-            {{ form_label(form.description) }}
-            {{ form_widget(form.description, {'attr': {'class': 'form-control'}}) }}
-            {% for error in form.description.vars.errors %}
-                <div class="form-error-message text-danger">{{ error.message }}</div>
-            {% endfor %}
-        </div>
-
-        <button class="btn btn-success">Сохранить</button>
-        {{ form_end(form) }}
-    </div>
+    <a class="btn btn-outline-secondary mt-3" href="{{ path('app_course_index') }}">Вернуться к списку курсов</a>
 {% endblock %}
