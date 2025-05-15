@@ -1,0 +1,52 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Транзакции{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ path('app_course_index') }}">Главная</a></li>
+        <li class="breadcrumb-item"><a href="{{ path('app_profile') }}">Профиль</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Транзакции</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block body %}
+    <h1>Транзакции</h1>
+
+    <div class="container">
+    <table class="table">
+        <thead>
+        <tr>
+            <td>№</td>
+            <td>Дата</td>
+            <td>Тип операции</td>
+            <td>Сумма</td>
+            <td>Курс</td>
+        </tr>
+        </thead>
+        {% for transaction in transactions %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ transaction.create_at|date('d.m.Y H:i') }}</td>
+                <td class='fw-bold'>
+                {% if transaction.type == 'payment' %}
+                    <span class='text-danger'>Списание</span>
+                {% else %}
+                    <span class='text-success'>Пополнение</span>
+                {% endif %}
+                </td>
+                <td>{{ transaction.amount }}</td>
+                <td>
+                    {% if(transaction.course) %}
+                    <a href="{{ path('app_course_show', {'id': transaction.course.id}) }}">{{ transaction.course.title }}</a>
+                    {% else %}
+                    -
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+    </table>
+    </div>
+{% endblock %}

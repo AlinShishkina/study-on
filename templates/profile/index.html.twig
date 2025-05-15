@@ -1,0 +1,31 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Профиль{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ path('app_course_index') }}">Главная</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Профиль</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block body %}
+    <h1>Профиль</h1>
+
+    <div class="container">
+            <div class="m-2">
+                Email: {{ user.email }}
+            </div>
+            <div class="m-2">
+                Ваша роль: {{ user_role }}
+            </div>
+            <div class="m-2" id='balance-field'>
+                Ваш баланс: {{ user.balance }} 
+                <a href="{{ path('app_profile_transactions') }}" class='m-1' id='link-transaction'>История транзакций</a>
+            </div>
+
+            <a id='logout-profile-btn' class='btn btn-primary' href="{{ path('app_logout') }}">Выход</a>
+    </div>
+{% endblock %}

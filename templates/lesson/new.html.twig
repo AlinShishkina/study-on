@@ -1,0 +1,22 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Новый урок{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ path('app_course_index') }}">Главная</a></li>
+        <li class="breadcrumb-item active"> <a href="{{ path('app_course_show', {'id': lesson.course.id}) }}">{{ lesson.course.title }}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Новый урок</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block body %}
+    <h1>Создание нового урока</h1>
+    <p class="lead">
+        Вы создаете новый урок для курса "{{ lesson.course.title }}"
+    </p>
+
+    {{ include('lesson/_form.html.twig') }}
+{% endblock %}

@@ -1,0 +1,96 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ course.title }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ path('app_course_index') }}">Главная</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ course.title }}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block body %}
+    <h1>{{ course.title }}</h1>
+
+    {% for message in app.flashes('success') %}
+        <div class="mt-2 alert alert-success">{{ message }}</div>
+    {% endfor %}
+    {% for message in app.flashes('error') %}
+        <div class="mt-2 alert alert-danger">{{ message }}</div>
+    {% endfor %}
+
+    {% if is_granted('ROLE_USER') and course.type != 'free' %}
+        {% if course.transaction is not null %}
+            <span class="text-primary fs-4 fw-bold fst-italic">
+                {% if course.transaction.expires_at %}
+                    Арендовано до {{ course.transaction.expires_at|date('d.m.Y H:i') }}
+                {% else %}
+                    Куплено
+                {% endif %}
+            </span>
+        {% else %}
+            <button 
+                id="buy-course" 
+                type="button" 
+                class="btn btn-success mb-2 {% if disabled == true %}disabled{% endif %}" 
+                {% if disabled == true %}aria-disabled="true" disabled{% endif %}
+                data-bs-toggle="modal" 
+                data-bs-target="#modal"
+            >
+                {{ course.type == 'rent' ? 'Арендовать' : 'Купить' }}
+            </button>
+        {% endif %}
+    {% endif %}
+
+    <p>Вид доступа: {{ course.type_name }}</p>
+    {% if course.type != 'free' %}
+        <p>Стоимость: {{ course.price }} P</p>
+    {% endif %}
+    <p class="mt-2">{{ course.description }}</p>
+
+    <ul class="list-group">
+        {% for lesson in course.lessons %}
+            <li>
+                <a href="{{ path('app_lesson_show', {'id': lesson.id}) }}" class="mb-1 list-group-item list-group-item-action lesson-item">
+                    {{ lesson.serialNumber }}. {{ lesson.name }}
+                </a>
+            </li>
+        {% endfor %}
+    </ul>
+
+    <div class="d-flex gap-2 mt-2" role="group">
+        <a class="btn btn-dark" href="{{ path('app_course_index') }}">К списку курсов</a>
+
+        {% if is_granted('ROLE_SUPER_ADMIN') %}
+            <a class="btn btn-secondary" href="{{ path('app_course_edit', {'id': course.id}) }}">Редактировать</a>
+
+            {{ include('course/_delete_form.html.twig') }}
+
+            <a class="btn btn-success" href="{{ path('app_lesson_new', {'course_id': course.id}) }}">Добавить урок</a>
+        {% endif %}
+    </div>
+
+    <!-- Модальное окно -->
+    <div class="modal fade" id="modal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Подтвердите действие</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body">
+                    Вы уверены, что хотите приобрести этот курс?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                    <form action="{{ path('app_course_buy', {'id': course.id}) }}" method="POST" style="display:inline;">
+                        <button type="submit" class="btn btn-primary">Да, уверен(а)</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}

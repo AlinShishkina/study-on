@@ -1,0 +1,18 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Новый курс{% endblock %}
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ path('app_course_index') }}">Главная</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Новый курс</li>
+    </ol>
+</nav>
+{% endblock %}
+{% block body %}
+    <h1>Создание нового курса</h1>
+
+    {{ include('course/_form.html.twig') }}
+
+    <a class='btn btn-dark mt-2' href="{{ path('app_course_index') }}">Назад к списку</a>
+{% endblock %}

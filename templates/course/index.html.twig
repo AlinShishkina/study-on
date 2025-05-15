@@ -1,0 +1,43 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Список курсов{% endblock %}
+
+{% block body %}
+    <h1>Список курсов</h1>
+
+    <div class="container">
+        <div class="row g-4 mb-3 mt-2">
+        {% for course in courses %}
+            <div class="col-6">
+                <div class='card'> 
+                <div class="card-body">               
+                    <h5 class="card-title mt-2">{{ course.title }}</h5>
+                    <span class='cart-status cart-status_{{course.type}}'>
+                        {{ course.type_name }}
+                        {% if course.type != 'free' %}
+                            {{ course.price }} P
+                        {% endif %}
+                    </span>
+                    <p class="card-text text-truncate-with-dots">{{ course.description }}</p>
+                    
+                </div>
+                <div class='cart-footer p-3 pt-0'>
+                    <a href="{{ path('app_course_show', {'id': course.id}) }}" class="btn btn-primary">Подробнее</a>
+                    <span class='text-secondary m-2'>
+                    {% if is_granted('ROLE_USER') and course.transaction != null %}
+                        {% if course.transaction.expires_at %}
+                            Арендовано до {{ course.transaction.expires_at|date("d.m.Y H:i") }}
+                        {% else %}
+                            Куплено
+                        {% endif %}
+                    {% endif %}
+                    </span>
+                </div>
+                </div>
+            </div>
+        {% endfor %}
+        </div>
+    </div>
+
+    <a class='btn btn-success' href="{{ path('app_course_new') }}">+ Добавить</a>
+{% endblock %}
