@@ -15,10 +15,16 @@ use Symfony\Component\DependencyInjection\ContainerAwareInterface;
 use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Component\HttpFoundation\Response;
 
+/**
+ * Абстрактный тестовый класс с базовой логикой для тестов
+ */
 abstract class AbstractTest extends WebTestCase
 {
     protected static $client;
 
+    /**
+     * Создание клиента тестирования
+     */
     protected static function createTestClient(array $options = [], array $server = [])
     {
         if (!static::$client) {
@@ -28,6 +34,9 @@ abstract class AbstractTest extends WebTestCase
         return static::$client;
     }
 
+    /**
+     * Настройка перед каждым тестом
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -35,6 +44,9 @@ abstract class AbstractTest extends WebTestCase
         $this->loadFixtures($this->getFixtures());
     }
 
+    /**
+     * Очистка после каждого теста
+     */
     final protected function tearDown(): void
     {
         parent::tearDown();
@@ -42,7 +54,7 @@ abstract class AbstractTest extends WebTestCase
     }
 
     /**
-     * Shortcut
+     * Упрощённый доступ к EntityManager
      */
     protected static function getEntityManager()
     {
@@ -50,7 +62,7 @@ abstract class AbstractTest extends WebTestCase
     }
 
     /**
-     * List of fixtures for certain test
+     * Список фикстур, которые будут загружены перед тестом
      */
     protected function getFixtures(): array
     {
@@ -58,7 +70,7 @@ abstract class AbstractTest extends WebTestCase
     }
 
     /**
-     * Load fixtures before test
+     * Загрузка указанных фикстур в базу данных
      */
     protected function loadFixtures(array $fixtures = [])
     {
@@ -82,6 +94,9 @@ abstract class AbstractTest extends WebTestCase
         $executor->execute($loader->getFixtures());
     }
 
+    /**
+     * Проверка: ответ успешен (HTTP 200)
+     */
     public function assertResponseOk(
         ?Response $response = null,
         ?string $message = null,
@@ -90,6 +105,9 @@ abstract class AbstractTest extends WebTestCase
         $this->failOnResponseStatusCheck($response, 'isOk', $message, $type);
     }
 
+    /**
+     * Проверка: ответ - редирект (HTTP 3xx)
+     */
     public function assertResponseRedirect(
         ?Response $response = null,
         ?string $message = null,
@@ -98,6 +116,9 @@ abstract class AbstractTest extends WebTestCase
         $this->failOnResponseStatusCheck($response, 'isRedirect', $message, $type);
     }
 
+    /**
+     * Проверка: ответ - не найден (HTTP 404)
+     */
     public function assertResponseNotFound(
         ?Response $response = null,
         ?string $message = null,
@@ -106,6 +127,9 @@ abstract class AbstractTest extends WebTestCase
         $this->failOnResponseStatusCheck($response, 'isNotFound', $message, $type);
     }
 
+    /**
+     * Проверка: доступ запрещён (HTTP 403)
+     */
     public function assertResponseForbidden(
         ?Response $response = null,
         ?string $message = null,
@@ -114,6 +138,9 @@ abstract class AbstractTest extends WebTestCase
         $this->failOnResponseStatusCheck($response, 'isForbidden', $message, $type);
     }
 
+    /**
+     * Проверка: ответ с указанным HTTP-кодом
+     */
     public function assertResponseCode(
         int $expectedCode,
         ?Response $response = null,
@@ -122,11 +149,9 @@ abstract class AbstractTest extends WebTestCase
     ) {
         $this->failOnResponseStatusCheck($response, $expectedCode, $message, $type);
     }
+
     /**
-     * @param Response $response
-     * @param string   $type
-     *
-     * @return string
+     * Предположение об ошибке из тела ответа
      */
     public function guessErrorMessageFromResponse(Response $response, string $type = 'text/html')
     {
@@ -142,10 +167,10 @@ abstract class AbstractTest extends WebTestCase
                     $data = json_decode($content);
                     if ($data) {
                         $content = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-                        $add = ' FORMATTED';
+                        $add = ' ОТРЕФОРМАТИРОВАНО';
                     }
                 }
-                $title = '[' . $response->getStatusCode() . ']' . $add .' - ' . $content;
+                $title = '[' . $response->getStatusCode() . ']' . $add . ' - ' . $content;
             } else {
                 $title = $crawler->filter('title')->text();
             }
@@ -156,60 +181,65 @@ abstract class AbstractTest extends WebTestCase
         return trim($title);
     }
 
-   private function failOnResponseStatusCheck(
-    ?Response $response = null,
-    int|string|null $func = null,
-    ?string $message = null,
-    string $type = 'text/html'
-): void {
-    if (null === $func) {
-        $func = 'isOk';
-    }
-
-    if (null === $response && self::$client) {
-        $response = self::$client->getResponse();
-    }
-
-    try {
-        if (is_int($func)) {
-            $this->assertEquals($func, $response->getStatusCode());
-        } else {
-            $this->assertTrue($response->{$func}());
+    /**
+     * Общая логика проверки статуса ответа и вывод сообщения при ошибке
+     */
+    private function failOnResponseStatusCheck(
+        ?Response $response = null,
+        int|string|null $func = null,
+        ?string $message = null,
+        string $type = 'text/html'
+    ): void {
+        if (null === $func) {
+            $func = 'isOk';
         }
 
-        return;
-    } catch (\Exception $e) {
-        // nothing to do
+        if (null === $response && self::$client) {
+            $response = self::$client->getResponse();
+        }
+
+        try {
+            if (is_int($func)) {
+                $this->assertEquals($func, $response->getStatusCode());
+            } else {
+                $this->assertTrue($response->{$func}());
+            }
+
+            return;
+        } catch (\Exception $e) {
+            // Перехват и продолжение для получения ошибки ниже
+        }
+
+        $err = $this->guessErrorMessageFromResponse($response, $type);
+        if ($message) {
+            $message = rtrim($message, '.') . ". ";
+        } else {
+            $message = '';
+        }
+
+        if (is_int($func)) {
+            $template = "Ожидался статус ответа %s, получен %s.";
+            $message .= sprintf($template, $func, $response->getStatusCode());
+        } else {
+            $template = "Ожидалось, что ответ [%s] удовлетворяет условию: %s.";
+            $funcFormatted = preg_replace('#([a-z])([A-Z])#', '$1 $2', $func);
+            $message .= sprintf($template, $response->getStatusCode(), $funcFormatted);
+        }
+
+        $max_length = 100;
+        if (mb_strlen($err, 'utf-8') < $max_length) {
+            $message .= " " . $this->makeErrorOneLine($err);
+        } else {
+            $message .= " " . $this->makeErrorOneLine(mb_substr($err, 0, $max_length, 'utf-8') . '...');
+            $message .= "\n\n" . $err;
+        }
+
+        $this->fail($message);
     }
 
-    $err = $this->guessErrorMessageFromResponse($response, $type);
-    if ($message) {
-        $message = rtrim($message, '.') . ". ";
-    } else {
-        $message = '';
-    }
-
-    if (is_int($func)) {
-        $template = "Failed asserting Response status code %s equals %s.";
-        $message .= sprintf($template, $response->getStatusCode(), $func);
-    } else {
-        $template = "Failed asserting that Response[%s] %s.";
-        $funcFormatted = preg_replace('#([a-z])([A-Z])#', '$1 $2', $func);
-        $message .= sprintf($template, $response->getStatusCode(), $funcFormatted);
-    }
-
-    $max_length = 100;
-    if (mb_strlen($err, 'utf-8') < $max_length) {
-        $message .= " " . $this->makeErrorOneLine($err);
-    } else {
-        $message .= " " . $this->makeErrorOneLine(mb_substr($err, 0, $max_length, 'utf-8') . '...');
-        $message .= "\n\n" . $err;
-    }
-
-    $this->fail($message);
-}
-
-
+    /**
+     * Преобразует текст ошибки в одну строку
+     */
     private function makeErrorOneLine($text)
     {
         return preg_replace('#[\n\r]+#', ' ', $text);

@@ -336,22 +336,26 @@ class CourseFunctionaltest extends AbstractTest
     public function testBuyCourseSuccess()
     {
         $client = $this->createAuthorizedClient($this->userEmail, $this->userEmail);
-
+    
+        // Заходим на страницу курса
         $crawler = $client->request('GET', '/courses/4');
-
         $this->assertResponseStatusCodeSame(Response::HTTP_OK);
-
-        $link = $crawler->filter('#buy-course')->first();
-        $crawler = $client->click($link->link());
-
-        $button = $crawler->filter('#modalButton')->form();
-
-        $client->submit($button);
-
+    
+        // Находим форму из модального окна
+        $form = $crawler->filter('form[action="/courses/4/buy"]')->form();
+    
+        // Отправляем форму (POST запрос покупки)
+        $client->submit($form);
+    
+        // Проверяем редирект после покупки
         $this->assertResponseRedirect();
-
+    
+        // Переходим по редиректу
         $crawler = $client->followRedirect();
+    
+        // Проверяем наличие успешного сообщения
         $this->assertSelectorExists('.alert');
         $this->assertSelectorTextContains('.alert', 'Курс успешно оплачен');
     }
+    
 }
