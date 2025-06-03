@@ -34,14 +34,12 @@ class CourseFunctionaltest extends AbstractTest
         $client = static::billingClient();
         $crawler = $client->request('GET', '/courses/');
     
-        // Проверяем, что ссылка "Подробнее" существует
         $link = $crawler->selectLink('Подробнее')->link();
         $this->assertNotNull($link, 'Ссылка "Подробнее" не найдена на странице');
     
-        // Переходим по ссылке
+    
         $crawler = $client->click($link);
     
-        // Проверяем, что ответ успешный (код 200)
         $this->assertResponseIsSuccessful();
     }
     
@@ -341,20 +339,19 @@ class CourseFunctionaltest extends AbstractTest
     {
         $client = $this->createAuthorizedClient($this->userEmail, $this->userEmail);
     
-        // Заходим на страницу курса
+       
         $crawler = $client->request('GET', '/courses/4');
         $this->assertResponseStatusCodeSame(Response::HTTP_OK);
     
-        // Находим форму из модального окна
+
         $form = $crawler->filter('form[action="/courses/4/buy"]')->form();
-    
-        // Отправляем форму (POST запрос покупки)
+ 
         $client->submit($form);
     
         // Проверяем редирект после покупки
         $this->assertResponseRedirect();
     
-        // Переходим по редиректу
+    
         $crawler = $client->followRedirect();
     
         // Проверяем наличие успешного сообщения
