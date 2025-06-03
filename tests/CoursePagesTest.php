@@ -9,7 +9,20 @@ use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\NullOutput;
 
 class CoursePagesTest extends AbstractTest
+
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // Подменяем биллинг-клиент на мок
+        $this->getClient()->disableReboot();
+        $this->getClient()->getContainer()->set(
+            \App\Service\BillingClient::class,
+            new \App\Tests\Mock\BillingClientMock(
+                $this->getClient()->getContainer()->get(\Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface::class)
+            )
+        );
+    }
     protected function getFixtures(): array
     {
         // обнуление сиквансов перед загрузкой фикстур

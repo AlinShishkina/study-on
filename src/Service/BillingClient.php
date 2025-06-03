@@ -1,8 +1,11 @@
 <?php
 
 namespace App\Service;
+use App\Service\BillingRequstService;
 
 use App\Exception\BillingUnavailableException;
+
+use function Symfony\Component\DependencyInjection\Loader\Configurator\env;
 
 class BillingClient
 {

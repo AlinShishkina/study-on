@@ -39,7 +39,7 @@ class BillingClientMock extends BillingClient
         return ['code' => 401, "message" => "Invalid credentials."];
     }
 
-    public function registraton(string $credentials): array
+    public function registration(string $credentials): array
     {
         $arrayedCredentials = json_decode($credentials, true, 512, JSON_THROW_ON_ERROR);
 

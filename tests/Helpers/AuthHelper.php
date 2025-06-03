@@ -13,13 +13,16 @@ trait AuthHelper
     
     private function billingClient()
     {
-        self::createTestClient()->disableReboot();
+        $client = self::createTestClient();
+        $client->disableReboot();
 
-        self::createTestClient()->getContainer()->set(
+        $client->getContainer()->set(
             BillingClient::class,
-            new BillingClientMock(self::getClient()->getContainer()->get(TokenStorageInterface::class))
+            new BillingClientMock(
+                $client->getContainer()->get(TokenStorageInterface::class)
+            )
         );
-        return self::createTestClient();
+        return $client;
     }
     
     public function createAuthorizedClient($email, $password)
@@ -35,7 +38,6 @@ trait AuthHelper
         );
 
         $client->submit($form);
-
         $client->followRedirect();
 
         return $client;

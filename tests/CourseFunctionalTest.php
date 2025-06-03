@@ -31,16 +31,20 @@ class CourseFunctionaltest extends AbstractTest
      */
     public function testHasLinkToDetailCourse(): void
     {
-        $client = self::createTestClient();
-        $url = '/courses/';
-
-        $crawler = $client->request('GET', $url);
+        $client = static::billingClient();
+        $crawler = $client->request('GET', '/courses/');
+    
+        // Проверяем, что ссылка "Подробнее" существует
         $link = $crawler->selectLink('Подробнее')->link();
-
+        $this->assertNotNull($link, 'Ссылка "Подробнее" не найдена на странице');
+    
+        // Переходим по ссылке
         $crawler = $client->click($link);
-
-        $this->assertResponseOk();
+    
+        // Проверяем, что ответ успешный (код 200)
+        $this->assertResponseIsSuccessful();
     }
+    
     
     /**
      * Проверка детальной страницы курса и элементов на ней

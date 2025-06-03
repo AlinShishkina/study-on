@@ -17,7 +17,7 @@ class CourseType extends AbstractType
         $builder
             ->add('code', null, [
                 'attr' => ['class' => 'form-control'],
-                'label' => 'МногоСимвольный код',
+                'label' => 'Символьный код',
                 'constraints' => [
                     new NotBlank(message: 'Символьный код не может быть пустым'),
                 ],
@@ -32,7 +32,7 @@ class CourseType extends AbstractType
             ])
             ->add('description', TextareaType::class, [
                 'attr' => ['class' => 'form-control'],
-                'label' => 'Продающее описание',
+                'label' => ' описание',
             ])
         ;
     }

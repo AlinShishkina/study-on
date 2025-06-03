@@ -76,7 +76,7 @@ class LessonController extends AbstractController
                 ]
             );
             if (!isset($response[0])) {
-                throw new AccessDeniedException('Для доступа к уроку необходимо преобрести курс!');
+                throw new AccessDeniedException('Для доступа к уроку необходимо приобрести курс!');
             }
         }
         

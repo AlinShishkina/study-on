@@ -198,13 +198,17 @@ abstract class AbstractTest extends WebTestCase
             $response = self::$client->getResponse();
         }
 
+        // Добавлена проверка на существование ответа
+        if (!$response) {
+            $this->fail('Response is null');
+        }
+
         try {
             if (is_int($func)) {
                 $this->assertEquals($func, $response->getStatusCode());
             } else {
                 $this->assertTrue($response->{$func}());
             }
-
             return;
         } catch (\Exception $e) {
             // Перехват и продолжение для получения ошибки ниже

@@ -8,11 +8,11 @@ use JsonException;
 class BillingRequstService
 {
     /**
-     * Отправка POST-запроса
+     * Выполнить POST-запрос к биллингу
      *
      * @param string $url
-     * @param string|null $data
-     * @param string|null $token
+     * @param ?string $data JSON-строка с данными для отправки (может быть null)
+     * @param ?string $token Токен авторизации (может быть null)
      * @return array
      * @throws BillingUnavailableException
      * @throws JsonException
@@ -46,15 +46,15 @@ class BillingRequstService
         if ($response === false) {
             throw new BillingUnavailableException('Сервис временно недоступен.');
         }
-        
+
         return json_decode($response, true, 512, JSON_THROW_ON_ERROR);
     }
 
     /**
-     * Отправка GET-запроса
+     * Выполнить GET-запрос к биллингу
      *
      * @param string $url
-     * @param string|null $token
+     * @param ?string $token Токен авторизации (может быть null)
      * @return array
      * @throws BillingUnavailableException
      * @throws JsonException
@@ -82,7 +82,7 @@ class BillingRequstService
         if ($response === false) {
             throw new BillingUnavailableException('Сервис временно недоступен.');
         }
-        
+
         return json_decode($response, true, 512, JSON_THROW_ON_ERROR);
     }
 }

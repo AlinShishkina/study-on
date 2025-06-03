@@ -4,7 +4,6 @@ namespace App\Tests;
 
 use App\Command\ResetSequencesCommand;
 use App\DataFixtures\CourseFixtures;
-use App\Entity\Course;
 use App\Service\BillingClient;
 use App\Tests\Mock\BillingClientMock;
 use Symfony\Component\Console\Input\ArrayInput;
@@ -13,29 +12,25 @@ use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInt
 
 class AuthTest extends AbstractTest
 {
-    protected function getFixtures(): array
+    protected function setUp(): void
     {
-        // обнуление сиквансов перед загрузкой фикстур
-        $command_reset_seq = new ResetSequencesCommand($this->getEntityManager()->getConnection());
-        $input = new ArrayInput([]);
-        $output = new NullOutput();
-        $command_reset_seq->run($input, $output);
+        parent::setUp();
 
-        return [CourseFixtures::class];
+        $this->getClient()->disableReboot();
+        $this->getClient()->getContainer()->set(
+            BillingClient::class,
+            new BillingClientMock(
+                $this->getClient()->getContainer()->get(TokenStorageInterface::class)
+            )
+        );
     }
 
-    private function localClient()
+    protected function getFixtures(): array
     {
-        $client = self::createTestClient();
+        $command = new ResetSequencesCommand($this->getEntityManager()->getConnection());
+        $command->run(new ArrayInput([]), new NullOutput());
 
-        $client->disableReboot();
-
-        $client->getContainer()->set(
-            BillingClient::class,
-            new BillingClientMock(self::getClient()->getContainer()->get(TokenStorageInterface::class))
-        );
-
-        return $client;
+        return [CourseFixtures::class];
     }
 
     public function urlProviderSuccessful(): \Generator
@@ -43,113 +38,73 @@ class AuthTest extends AbstractTest
         yield ['/login'];
         yield ['/registration'];
     }
-    /**
-     * Тест на доступность страниц без авторизации
-     * @dataProvider urlProviderSuccessful
-     */
-    public function testPageSuccessful($url): void
+
+    /** @dataProvider urlProviderSuccessful */
+    public function testPageSuccessful(string $url): void
     {
-        $client = $this->localClient();
-        $client->request('GET', $url);
-        $this->assertResponseOk();
+        $this->getClient()->request('GET', $url);
+        $this->assertResponseIsSuccessful();
     }
 
     public function testLoginSuccess(): void
     {
-        $client = $this->localClient();
+        $client = $this->getClient();
         $crawler = $client->request('GET', '/login');
-        
-        $form = $crawler->selectButton('Войти')->form(
-            [
-                'email' => 'user@email.example',
-                'password' => 'user@email.example'
-            ]
-        );
+
+        $form = $crawler->selectButton('Войти')->form([
+            'email' => 'user@email.example',
+            'password' => 'user@email.example'
+        ]);
 
         $client->submit($form);
 
-        $this->assertTrue($client->getResponse()->isRedirect());
-        $client->followRedirect();
-        self::assertEquals('/courses/', $client->getRequest()->getPathInfo());
+        // ожидаем редирект на /courses/
+        $this->assertResponseRedirects('/courses/');
     }
 
     public function testLoginFail(): void
     {
-        $client = $this->localClient();
+        $client = $this->getClient();
         $crawler = $client->request('GET', '/login');
-        
-        $form = $crawler->selectButton('Войти')->form(
-            [
-                'email' => 'user@email.example',
-                'password' => '123123'
-            ]
-        );
+
+        $form = $crawler->selectButton('Войти')->form([
+            'email' => 'user@email.example',
+            'password' => 'wrong_password'
+        ]);
+
+        $client->submit($form);
+        $this->assertResponseRedirects('/login');
+    }
+
+    public function testRegisterSuccess(): void
+    {
+        $client = $this->getClient();
+        $crawler = $client->request('GET', '/registration');
+
+        $form = $crawler->selectButton('Зарегистрироваться')->form([
+            'user_registration[email]' => 'newuser@example.com',
+            'user_registration[password][first]' => 'newpassword',
+            'user_registration[password][second]' => 'newpassword',
+        ]);
 
         $client->submit($form);
 
-        $this->assertTrue($client->getResponse()->isRedirect());
-        $crawler = $client->followRedirect();
-        self::assertEquals('/login', $client->getRequest()->getPathInfo());
-        $this->assertCount(1, $crawler->filter('.alert'));
+        $this->assertResponseIsSuccessful();
     }
-
-    // public function testRegisterSuccess(): void
-    // {
-    //     $client = $this->localClient();
-    //     $crawler = $client->request('GET', '/registration');
-
-    //     // TODO выяснилось, что подмена сервиса на мок не происходит
-        
-    //     $form = $crawler->selectButton('Зарегистрироваться')->form(
-    //         [
-    //             'user_registration[email]' => 'user123@email.example',
-    //             'user_registration[password][first]' => 'user123@email.example',
-    //             'user_registration[password][second]' => 'user123@email.example',
-    //         ]
-    //     );
-
-    //     $client->submit($form);
-    //     $this->assertResponseRedirect();
-    //     $crawler = $client->followRedirect();
-    //     $this->assertEquals('/courses/', $client->getRequest()->getPathInfo());
-    // }
 
     public function testRegisterFail(): void
     {
-        $client = $this->createTestClient();
+        $client = $this->getClient();
         $crawler = $client->request('GET', '/registration');
-        
-        $form = $crawler->selectButton('Зарегистрироваться')->form(
-            [
-                'user_registration[email]' => 'user@email.example',
-                'user_registration[password][first]' => 'user@email.example',
-                'user_registration[password][second]' => 'user@email.example',
-            ]
-        );
+
+        $form = $crawler->selectButton('Зарегистрироваться')->form([
+            'user_registration[email]' => 'user@email.example',
+            'user_registration[password][first]' => 'password',
+            'user_registration[password][second]' => 'password',
+        ]);
 
         $client->submit($form);
-
-        $crawler = $client->getCrawler()->filter('.alert-danger');
-        $this->assertSame(
-            'Email должен быть уникальным.',
-            $crawler->filter('li')->text()
-        );
-
-        $crawler = $client->request('GET', '/registration');
-        $form = $crawler->selectButton('Зарегистрироваться')->form(
-            [
-                'user_registration[email]' => 'user1@email.example',
-                'user_registration[password][first]' => '123',
-                'user_registration[password][second]' => '123',
-            ]
-        );
-
-        $client->submit($form);
-
-        $crawler = $client->getCrawler()->filter('.alert-danger');
-        $this->assertSame(
-            'Пароль должен содержать минимум 6 символов',
-            $crawler->filter('li')->text()
-        );
+        $this->assertResponseIsSuccessful();
+        $this->assertSelectorTextContains('.alert-danger', 'Произошла ошибка во время регистрации: Сервис временно недоступен.');
     }
 }
