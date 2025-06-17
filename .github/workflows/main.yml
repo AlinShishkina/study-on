@@ -1,4 +1,4 @@
-name: CI
+name: CI 
 
 on:
   push:
@@ -8,6 +8,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
@@ -19,19 +20,22 @@ jobs:
           coverage: pcov
           tools: composer
 
-      - name: Setting environment and composer
-        run: |
-     
-          echo "DATABASE_URL=pgsql://postgres:admin@postgres:5432/study_on" >> .env.local
-          composer install
-
       - name: Install Docker Compose
         run: |
           sudo curl -L "https://github.com/docker/compose/releases/download/v2.27.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
           sudo chmod +x /usr/local/bin/docker-compose
           docker-compose --version
 
-      - name: Start Docker containers
+      - name: Create external Docker network
+        run: |
+          docker network inspect study-on_default || docker network create study-on_default
+
+      - name: Setup environment and install dependencies
+        run: |
+          echo "DATABASE_URL=pgsql://postgres:admin@postgres:5432/study_on" > .env.local
+          composer install
+
+      - name: Build and start containers
         run: |
           mkdir -p ~/.yarn
           docker-compose build
@@ -45,7 +49,6 @@ jobs:
 
       - name: Initialize test environment
         run: |
-
           echo "DATABASE_URL=pgsql://postgres:admin@postgres:5432/study_on_test" > .env.test.local
           docker-compose exec -T php bin/console doctrine:database:drop --force --env=test || true
           docker-compose exec -T php bin/console doctrine:database:create --env=test
