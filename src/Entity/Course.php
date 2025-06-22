@@ -8,9 +8,10 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: CourseRepository::class)]
-#[UniqueEntity(fields: ['code'], message: 'Символьный код плохой!')]
+#[UniqueEntity(fields: ['code'], message: 'Символьный код должен быть уникальным!')]
 class Course
 {
     use ToArrayTrait;
@@ -21,9 +22,11 @@ class Course
     private ?int $id = null;
 
     #[ORM\Column(length: 255, unique: true)]
+    #[Assert\NotBlank(message: 'Символьный код не может быть пустым')]
     private ?string $code = null;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank(message: 'Название курса не может быть пустым')]
     private ?string $title = null;
 
     #[ORM\Column(length: 1000, nullable: true)]
@@ -100,7 +103,6 @@ class Course
     public function removeLesson(Lesson $lesson): static
     {
         if ($this->lessons->removeElement($lesson)) {
-            // set the owning side to null (unless already changed)
             if ($lesson->getCourse() === $this) {
                 $lesson->setCourse(null);
             }

@@ -5,6 +5,7 @@ namespace App\Entity;
 use App\Repository\LessonRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: LessonRepository::class)]
 class Lesson
@@ -15,9 +16,11 @@ class Lesson
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank(message: 'Название урока не может быть пустым')]
     private ?string $name = null;
 
     #[ORM\Column(type: Types::TEXT)]
+    #[Assert\NotBlank(message: 'Содержание урока не может быть пустым')]
     private ?string $content = null;
 
     #[ORM\ManyToOne(inversedBy: 'lessons')]
@@ -25,6 +28,12 @@ class Lesson
     private ?Course $course = null;
 
     #[ORM\Column(nullable: true)]
+    #[Assert\NotBlank(message: 'Номер урока не может быть пустым')]
+    #[Assert\Range(
+        min: 1,
+        max: 10000,
+        notInRangeMessage: 'Больше 1 000 и меньше 1 нельзя :('
+    )]
     private ?int $serialNumber = null;
 
     public function getId(): ?int

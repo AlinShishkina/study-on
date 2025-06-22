@@ -8,9 +8,6 @@ use Symfony\Component\Form\Extension\Core\Type\PasswordType;
 use Symfony\Component\Form\Extension\Core\Type\RepeatedType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
-use Symfony\Component\Validator\Constraints\Email;
-use Symfony\Component\Validator\Constraints\Length;
-use Symfony\Component\Validator\Constraints\NotBlank;
 
 class UserRegistrationType extends AbstractType
 {
@@ -22,10 +19,6 @@ class UserRegistrationType extends AbstractType
                 'attr' => [
                     'class' => 'form-control mb-3',
                     'placeholder' => 'Электронная почта',
-                ],
-                'constraints' => [
-                    new Email(message: 'Введенный адрес электронной почты невалиден.'),
-                    new NotBlank(message: 'Почта не может быть пустой.'),
                 ],
             ])
             ->add('password', RepeatedType::class, [
@@ -49,24 +42,12 @@ class UserRegistrationType extends AbstractType
                         'placeholder' => '',
                     ],
                 ],
-                'constraints' => [
-                    new NotBlank([
-                        'message' => 'Пароль не может быть пустым.',
-                    ]),
-                    new Length([
-                        'min' => 6,
-                        'minMessage' => 'Пароль должен содержать минимум 6 символов',
-                        'max' => 255,
-                    ]),
-                ],
             ]);
         ;
     }
 
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->setDefaults([
-            // Configure your form options here
-        ]);
+        $resolver->setDefaults([]);
     }
 }
